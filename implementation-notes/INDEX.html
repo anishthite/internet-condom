@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Implementation Notes — Index</title>
+<style>
+  body { font: 14px/1.5 -apple-system, system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }
+  th { background: #f6f6f6; position: sticky; top: 0; }
+  tr.superseded td { text-decoration: line-through; color: #888; }
+  .blast-high { color: #b00020; font-weight: 600; } .blast-med { color: #b85c00; } .blast-low { color: #2a7a2a; }
+  .status-in-progress { color: #b85c00; } .status-shipped { color: #2a7a2a; } .status-blocked { color: #b00020; }
+  a { color: #1a5fb4; text-decoration: none; } a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<h1>Implementation Notes — Index</h1>
+<p>One row per task, newest first. Never delete — superseded rows get strikethrough and a <code>[superseded by …]</code> note.</p>
+<table>
+  <thead><tr><th>Date</th><th>Task</th><th>Status</th><th>Blast</th><th>Tags</th><th>Summary</th></tr></thead>
+  <tbody>
+        <tr>
+      <td>2026-09-28</td>
+      <td><a href="2026-09-28-plain-english-tweet-filter.html">Plain-English tweet filter</a></td>
+      <td class="status-shipped">ready-for-review</td>
+      <td class="blast-low">low</td>
+      <td>chrome-extension, typesafe-jev</td>
+      <td>MV3 extension; Jev noul batch judging; D-001..D-004.</td>
+    </tr>
+    <!-- <tr>
+      <td>2026-05-18</td>
+      <td><a href="2026-05-18-stripe-webhook.html">Add Stripe webhook</a></td>
+      <td class="status-in-progress">in-progress</td>
+      <td class="blast-med">medium</td>
+      <td>billing, stripe</td>
+      <td>Idempotent handler; rejected polling (T-001); 1 open Q on retry window.</td>
+    </tr> -->
+  </tbody>
+</table>
+</body>
+</html>

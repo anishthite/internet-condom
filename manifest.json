@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "internet-condom",
+  "version": "0.1.0",
+  "description": "Block tweets with a plain-English filter.",
+  "permissions": ["storage"],
+  "host_permissions": ["https://api.typesafe.ai/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html" },
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spec — plain-english-tweet-filter</title>
+<meta name="task" content="Chrome MV3 extension that hides tweets matching a plain-English filter via TypeSafe Jev">
+<meta name="date-started" content="2026-09-28">
+<meta name="date-updated" content="2026-09-28">
+<meta name="status" content="ready-for-review">
+<meta name="blast-radius" content="low">
+<meta name="tags" content="chrome-extension, typesafe-jev, twitter">
+<style>
+  body { font: 14px/1.45 -apple-system, system-ui, sans-serif; max-width: 880px; margin: 1.5rem auto; padding: 0 1rem; color: #111; }
+  h1 { font-size: 20px; margin: 0 0 .25rem; }
+  h2 { font-size: 15px; margin: 1.4rem 0 .4rem; border-bottom: 1px solid #ddd; padding-bottom: .2rem; }
+  table { border-collapse: collapse; width: 100%; margin: .4rem 0 .8rem; }
+  th, td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; vertical-align: top; }
+  th { background: #f6f6f6; font-weight: 600; }
+  code, pre { font-family: ui-monospace, Menlo, monospace; }
+  code { background: #f1f1f1; padding: 1px 4px; border-radius: 3px; font-size: 12.5px; }
+  pre { background: #f6f6f6; padding: .55rem .7rem; border-radius: 4px; overflow-x: auto; font-size: 12.5px; line-height: 1.4; }
+  ul, ol { margin: .3rem 0 .8rem 1.2rem; padding: 0; }
+  li { margin: .15rem 0; }
+  .meta { color: #555; font-size: 12.5px; margin-bottom: .8rem; }
+  .kv { display: grid; grid-template-columns: 140px 1fr; gap: 2px 14px; font-size: 13px; margin: .4rem 0 1rem; }
+  .kv b { color: #444; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Plain-English tweet filter (Chrome MV3)</h1>
+<p class="meta">
+  <code>main</code> · worktree <code>~/workspace/internet-condom</code> · 2026-09-28 · status <b>ready-for-review</b> · blast <span class="blast-low">low</span>
+</p>
+
+<h2>Summary</h2>
+<div class="kv">
+  <b>Goal</b><div>Hide tweets matching a user-written plain-English filter on x.com/twitter.com.</div>
+  <b>Source</b><div>Tweet text from <code>[data-testid="tweetText"]</code>; verdicts from TypeSafe Jev <code>noul</code> questions.</div>
+  <b>Surface</b><div>Popup (filter, API key, enabled toggle); content script on x.com + twitter.com.</div>
+  <b>Schema</b><div><code>chrome.storage.local</code> keys: <code>enabled</code>, <code>filter</code>, <code>apiKey</code>.</div>
+  <b>Open Qs</b><div>0.</div>
+</div>
+
+<h2>API contract</h2>
+<pre>POST https://api.typesafe.ai/v1/systemone
+Authorization: Bearer &lt;apiKey&gt;
+{
+  "model": "jev-latest",
+  "state": "Tweets from a Twitter/X timeline.",
+  "questions": {
+    "&lt;statusId&gt;": { "type": "noul",
+      "instructions": { "tweet": "&lt;text&gt;",
+        "question": "Does `tweet` match this filter? Filter: &lt;filter&gt;" } } }
+}
+→ answers[&lt;statusId&gt;].noul ∈ [0,1]; hide when noul &gt; 0.5</pre>
+
+<h2>Algorithm</h2>
+<ol>
+  <li><code>MutationObserver</code> (childList+subtree, 100ms debounce) scans for <code>article[data-testid="tweet"]</code>.</li>
+  <li>Skip seen (<code>data-ic-seen</code>) and textless tweets; key by status id from <code>time</code> link, fallback to text.</li>
+  <li>Queue unseen; flush at 8 queued or 300ms idle → one Jev call, one <code>noul</code> question per tweet.</li>
+  <li>Cache verdict in-memory; <code>display:none</code> when <code>noul &gt; 0.5</code>; leave visible on API error.</li>
+  <li>On <code>filter</code>/<code>enabled</code> storage change: clear cache, unhide all, rescan.</li>
+</ol>
+
+<h2>Files</h2>
+<table>
+<tr><th>Path</th><th>Kind</th><th>Delta</th></tr>
+<tr><td><code>manifest.json</code></td><td>new</td><td>MV3: storage perm, host perm for <code>api.typesafe.ai</code>, SW + content script + popup.</td></tr>
+<tr><td><code>background.js</code></td><td>new</td><td>SW; <code>judge</code> message → Jev fetch → <code>{verdicts}</code>.</td></tr>
+<tr><td><code>content.js</code></td><td>new</td><td>Scan/batch/hide loop per Algorithm.</td></tr>
+<tr><td><code>popup.html</code>, <code>popup.js</code></td><td>new</td><td>Enabled checkbox, filter textarea, key input; save to storage on input.</td></tr>
+</table>
+
+<h2>Decisions</h2>
+<table>
+<tr><th>ID</th><th>Choice</th><th>Rationale</th></tr>
+<tr><td>D-001</td><td>TypeSafe Jev <code>noul</code> per tweet, batched 8/call.</td><td>User-picked backend; classification-only model fits; batching shares state cost.</td></tr>
+<tr><td>D-002</td><td>API calls in background SW, not content script.</td><td>Content-script fetches inherit page CORS; SW + host permission avoids it.</td></tr>
+<tr><td>D-003</td><td>Hide via <code>display:none</code>, no placeholder UI.</td><td>Simplest; X's virtualized list tolerates it.</td></tr>
+<tr><td>D-004</td><td>Tweet text embedded in question <code>instructions</code>, not <code>state</code>.</td><td>Documented backtick reference; lets one state serve N tweets.</td></tr>
+</table>
+
+<h2>Tradeoffs</h2>
+<table>
+<tr><th>ID</th><th>Picked over Rejected</th><th>Reason</th></tr>
+<tr><td>T-001</td><td>In-memory verdict cache over persisted <code>storage.local</code> cache.</td><td>Reload re-judges a few tweets; costs ~nothing at Jev prices. Add if cost shows up.</td></tr>
+<tr><td>T-002</td><td>Fixed threshold 0.5 over popup slider.</td><td>YAGNI; one constant to change.</td></tr>
+<tr><td>T-003</td><td>Plain JS, no bundler/npm.</td><td>5 files, load-unpacked just works.</td></tr>
+</table>
+
+<h2>Assumptions</h2>
+<ul>
+<li><b>A-001</b> X keeps <code>data-testid="tweet"</code>/<code>tweetText</code> and <code>/status/&lt;id&gt;</code> time links; breakage = tweets stay visible, no crash.</li>
+<li><b>A-002</b> User has a TypeSafe API key (<code>TYPESAFE_API_KEY</code>).</li>
+</ul>
+
+<h2>Reversibility</h2>
+<p><b>R-001</b> low — new repo, additive only; revert = delete files or toggle Enabled off.</p>
+
+<h2>Followups</h2>
+<ul>
+<li><b>L-001</b> Threshold slider + batch-size config if 0.5 misfires.</li>
+<li><b>L-002</b> Persisted verdict cache keyed by status id if API spend matters.</li>
+<li><b>L-003</b> Blur-with-reveal instead of hide, if user wants to audit blocked tweets.</li>
+</ul>
+
+<h2>Definition of done</h2>
+<ul>
+<li><input type="checkbox" checked disabled> <code>node --check</code> passes on all JS; manifest parses.</li>
+<li><input type="checkbox" disabled> Load unpacked → set key + filter + enable → matching tweets hide on x.com (needs user's key; manual).</li>
+</ul>
+
+</body>
+</html>

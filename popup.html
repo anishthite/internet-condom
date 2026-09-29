@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { width: 280px; padding: 12px; font: 13px system-ui; margin: 0; }
+      textarea { width: 100%; box-sizing: border-box; height: 70px; margin: 4px 0 10px; }
+      input[type="password"] { width: 100%; box-sizing: border-box; margin: 4px 0 10px; }
+      label { display: block; font-weight: 600; }
+      .row { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <label class="row"><input type="checkbox" id="enabled" /> Enabled</label>
+    <label for="filter">Filter (plain English)</label>
+    <textarea id="filter" placeholder="e.g. crypto shilling, engagement bait, US politics"></textarea>
+    <label for="key">TypeSafe API key</label>
+    <input type="password" id="key" placeholder="TYPESAFE_API_KEY" />
+    <script src="popup.js"></script>
+  </body>
+</html>
